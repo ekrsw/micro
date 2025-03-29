@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  user-api:
+    build: .
+    ports:
+      - "8001:8001"
+    volumes:
+      - .:/app
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=user
+      - POSTGRES_HOST=user-db
+      - POSTGRES_PORT=5432
+      - AUTH_SERVICE_BASE_URL=http://auth-api:8000
+    depends_on:
+      - user-db
+    networks:
+      - microservice-network
+
+  user-db:
+    image: postgres:13
+    volumes:
+      - user-postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=user
+    ports:
+      - "5433:5432"
+    networks:
+      - microservice-network
+
+volumes:
+  user-postgres-data:
+
+networks:
+  microservice-network:
+    external: true

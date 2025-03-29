@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  product-api:
+    build: .
+    ports:
+      - "8002:8002"
+    volumes:
+      - .:/app
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=product
+      - POSTGRES_HOST=product-db
+      - POSTGRES_PORT=5432
+      - AUTH_SERVICE_BASE_URL=http://auth-api:8000
+    depends_on:
+      - product-db
+    networks:
+      - microservice-network
+
+  product-db:
+    image: postgres:13
+    volumes:
+      - product-postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=product
+    ports:
+      - "5434:5432"
+    networks:
+      - microservice-network
+
+volumes:
+  product-postgres-data:
+
+networks:
+  microservice-network:
+    external: true

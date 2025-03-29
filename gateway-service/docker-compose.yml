@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  gateway-api:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+    environment:
+      - AUTH_SERVICE_URL=http://auth-api:8000
+      - USER_SERVICE_URL=http://user-api:8001
+      - PRODUCT_SERVICE_URL=http://product-api:8002
+    networks:
+      - microservice-network
+
+networks:
+  microservice-network:
+    external: true

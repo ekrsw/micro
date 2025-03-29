@@ -1,0 +1,128 @@
+services:
+  auth-db:
+    image: postgres:13
+    volumes:
+      - auth-postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=auth
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservice-network
+
+  auth-api:
+    build: ./auth-service
+    volumes:
+      - ./auth-service:/app
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=auth
+      - POSTGRES_HOST=auth-db
+      - POSTGRES_PORT=5432
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    networks:
+      - microservice-network
+
+  user-db:
+    image: postgres:13
+    volumes:
+      - user-postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=user
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservice-network
+
+  user-api:
+    build: ./user-service
+    volumes:
+      - ./user-service:/app
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=user
+      - POSTGRES_HOST=user-db
+      - POSTGRES_PORT=5432
+      - AUTH_SERVICE_BASE_URL=http://auth-api:8000
+    depends_on:
+      user-db:
+        condition: service_healthy
+      auth-api:
+        condition: service_started
+    networks:
+      - microservice-network
+
+  product-db:
+    image: postgres:13
+    volumes:
+      - product-postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=product
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservice-network
+
+  product-api:
+    build: ./product-service
+    volumes:
+      - ./product-service:/app
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=product
+      - POSTGRES_HOST=product-db
+      - POSTGRES_PORT=5432
+      - AUTH_SERVICE_BASE_URL=http://auth-api:8000
+    depends_on:
+      product-db:
+        condition: service_healthy
+      auth-api:
+        condition: service_started
+    networks:
+      - microservice-network
+
+  gateway-api:
+    build: ./gateway-service
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./gateway-service:/app
+    environment:
+      - AUTH_SERVICE_URL=http://auth-api:8000
+      - USER_SERVICE_URL=http://user-api:8001
+      - PRODUCT_SERVICE_URL=http://product-api:8002
+    depends_on:
+      - auth-api
+      - user-api
+      - product-api
+    networks:
+      - microservice-network
+
+volumes:
+  auth-postgres-data:
+  user-postgres-data:
+  product-postgres-data:
+
+networks:
+  microservice-network:
+    driver: bridge
