@@ -3,9 +3,10 @@ services:
     build: .
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/auth_db
-      - SECRET_KEY=your_secret_key
     depends_on:
       - db
     volumes:

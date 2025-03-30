@@ -1,27 +1,26 @@
-import os
 from typing import Any, Dict, Optional
 
-from pydantic import PostgresDsn, field_validator
+from pydantic import ConfigDict, Field, PostgresDsn, field_validator
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "your_secret_key_here")
-    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+    API_V1_STR: str = Field(default="/api/v1")
+    SECRET_KEY: str = Field(default="your_secret_key_here", json_schema_extra={"env": "SECRET_KEY"})
+    ALGORITHM: str = Field(default="HS256", json_schema_extra={"env": "ALGORITHM"})
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30, json_schema_extra={"env": "ACCESS_TOKEN_EXPIRE_MINUTES"})
     
     # PostgreSQL設定
-    POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", "db")
-    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "user")
-    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "password")
-    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "auth_db")
-    DATABASE_URL: Optional[PostgresDsn] = os.getenv("DATABASE_URL")
+    POSTGRES_SERVER: str = Field(default="db", json_schema_extra={"env": "POSTGRES_SERVER"})
+    POSTGRES_USER: str = Field(default="user", json_schema_extra={"env": "POSTGRES_USER"})
+    POSTGRES_PASSWORD: str = Field(default="password", json_schema_extra={"env": "POSTGRES_PASSWORD"})
+    POSTGRES_DB: str = Field(default="auth_db", json_schema_extra={"env": "POSTGRES_DB"})
+    DATABASE_URL: Optional[PostgresDsn] = Field(default=None, json_schema_extra={"env": "DATABASE_URL"})
     ASYNC_DATABASE_URL: Optional[str] = None
 
     # Admin設定
-    ADMIN_USERNAME: str = os.getenv("ADMIN_USERNAME", "admin")
-    ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "password")
+    ADMIN_USERNAME: str = Field(default="admin", json_schema_extra={"env": "ADMIN_USERNAME"})
+    ADMIN_PASSWORD: str = Field(default="password", json_schema_extra={"env": "ADMIN_PASSWORD"})
 
     @field_validator("DATABASE_URL", mode="before")
     def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
@@ -45,9 +44,10 @@ class Settings(BaseSettings):
             return str(db_url).replace("postgresql://", "postgresql+asyncpg://")
         return None
 
-    class Config:
-        case_sensitive = True
-        env_file = ".env"
+    model_config = ConfigDict(
+        case_sensitive=True,
+        env_file=".env"
+    )
 
 
 settings = Settings()
