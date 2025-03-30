@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     DATABASE_URL: Optional[PostgresDsn] = os.getenv("DATABASE_URL")
     ASYNC_DATABASE_URL: Optional[str] = None
 
+    # Admin設定
+    ADMIN_USERNAME: str = os.getenv("ADMIN_USERNAME", "admin")
+    ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "password")
+
     @field_validator("DATABASE_URL", mode="before")
     def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
         if isinstance(v, str):

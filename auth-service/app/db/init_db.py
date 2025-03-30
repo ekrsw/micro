@@ -9,6 +9,7 @@ from sqlalchemy.exc import OperationalError
 from app.db.db import Base, engine, AsyncSessionLocal
 from app.models.user import User
 from app.core.security import get_password_hash
+from app.core.config import settings
 
 # ロガーの設定
 logging.basicConfig(level=logging.INFO)
@@ -30,8 +31,8 @@ async def create_initial_admin(db: AsyncSession) -> None:
         # 管理者ユーザーの作成
         admin_user = User(
             id=uuid.uuid4(),
-            username="admin",
-            hashed_password=get_password_hash("adminpassword"),
+            username=settings.ADMIN_USERNAME,
+            hashed_password=get_password_hash(settings.ADMIN_PASSWORD),
             is_active=True,
             is_admin=True,
         )
