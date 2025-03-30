@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新規登録 - マイクロサービス</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="login-form">
+            <h1>新規登録</h1>
+            <div id="error-message" class="error-message"></div>
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="email">メールアドレス</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">パスワード</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">パスワード（確認）</label>
+                    <input type="password" id="confirm-password" name="confirm-password" required>
+                </div>
+                <button type="submit" class="btn-login">登録</button>
+            </form>
+            <div class="register-link">
+                <p>すでにアカウントをお持ちの場合は <a href="index.html">ログイン</a></p>
+            </div>
+        </div>
+    </div>
+    <script src="register.js"></script>
+</body>
+</html>

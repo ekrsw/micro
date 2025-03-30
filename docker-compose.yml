@@ -7,6 +7,12 @@ services:
       - "80:80"
     depends_on:
       - auth
+      - frontend
+    networks:
+      - microservice_network
+
+  frontend:
+    build: ./frontend-service
     networks:
       - microservice_network
 
