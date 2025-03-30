@@ -83,9 +83,22 @@ async def health_check():
 
 @app.on_event("startup")
 async def startup_event():
-    try:
-        await init_db()
-    except Exception as e:
-        logger.error(f"アプリケーション起動中にエラーが発生しました: {e}")
-        # エラーをログに記録するだけで、アプリケーションは起動を続行
-        # これにより、データベースが利用できない場合でもAPIの一部は機能する
+    max_retries = 5
+    retry_count = 0
+    retry_delay = 5  # 秒
+    
+    while retry_count < max_retries:
+        try:
+            await init_db()
+            logger.info("データベースの初期化が完了しました")
+            return
+        except Exception as e:
+            retry_count += 1
+            if retry_count < max_retries:
+                logger.warning(f"データベース初期化エラー: {e}. {retry_delay}秒後にリトライします ({retry_count}/{max_retries})...")
+                await asyncio.sleep(retry_delay)
+                retry_delay *= 2  # バックオフ
+            else:
+                logger.error(f"アプリケーション起動中にエラーが発生しました: {e}")
+                # エラーをログに記録するだけで、アプリケーションは起動を続行
+                # これにより、データベースが利用できない場合でもAPIの一部は機能する
