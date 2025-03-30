@@ -1,35 +1,40 @@
-from fastapi import FastAPI
+import logging
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1.api import api_router
+from app.api.endpoints import auth
 from app.core.config import settings
+from app.core.database import init_db
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    version=settings.VERSION,
-    description="Authentication Service API",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
 )
 
 # Set all CORS enabled origins
-if settings.BACKEND_CORS_ORIGINS:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-app.include_router(api_router, prefix=settings.API_V1_STR)
+# Include routers
+app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Starting up...")
+    await init_db()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger.info("Shutting down...")
 
 @app.get("/health")
-def health_check():
-    return {"status": "healthy"}
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+async def health_check():
+    return {"status": "ok"}

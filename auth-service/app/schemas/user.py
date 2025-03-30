@@ -1,51 +1,38 @@
 from typing import Optional
-import uuid
+from datetime import datetime
+from pydantic import BaseModel, EmailStr, Field
 
-from pydantic import BaseModel, EmailStr
-
-
-# Shared properties
 class UserBase(BaseModel):
-    email: Optional[EmailStr] = None
-    is_active: Optional[bool] = True
-    is_superuser: bool = False
-    full_name: Optional[str] = None
-
-
-# Properties to receive via API on creation
-class UserCreate(UserBase):
     email: EmailStr
-    password: str
+    username: str
+    is_active: Optional[bool] = True
 
+class UserCreate(UserBase):
+    password: str = Field(..., min_length=8)
 
-# Properties to receive via API on update
-class UserUpdate(UserBase):
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    username: Optional[str] = None
     password: Optional[str] = None
-
+    is_active: Optional[bool] = None
 
 class UserInDBBase(UserBase):
-    id: Optional[uuid.UUID] = None
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
-    model_config = {
-        "from_attributes": True
-    }
+    class Config:
+        orm_mode = True
 
-
-# Additional properties to return via API
 class User(UserInDBBase):
     pass
 
-
-# Additional properties stored in DB
 class UserInDB(UserInDBBase):
     hashed_password: str
 
-
-# For token
 class Token(BaseModel):
     access_token: str
     token_type: str
-
 
 class TokenPayload(BaseModel):
     sub: Optional[str] = None
