@@ -1,6 +1,5 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 from app.core.config import settings
 
@@ -22,7 +21,9 @@ AsyncSessionLocal = sessionmaker(
     engine, class_=AsyncSession, expire_on_commit=False, autocommit=False, autoflush=False
 )
 
-Base = declarative_base()
+# SQLAlchemy 2.0スタイルのベースクラス
+class Base(DeclarativeBase):
+    pass
 
 
 async def get_db():
