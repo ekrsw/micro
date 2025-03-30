@@ -29,7 +29,7 @@ async def create_initial_admin(db: AsyncSession) -> None:
 
         # 管理者ユーザーの作成
         admin_user = User(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             username="admin",
             hashed_password=get_password_hash("adminpassword"),
             is_active=True,

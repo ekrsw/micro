@@ -1,4 +1,5 @@
 from typing import Optional
+import uuid
 
 from pydantic import BaseModel
 
@@ -13,7 +14,7 @@ class UserCreate(UserBase):
 
 
 class UserInDBBase(UserBase):
-    id: str
+    id: uuid.UUID
     username: str
     is_active: bool = True
     is_admin: bool = False
@@ -36,4 +37,4 @@ class Token(BaseModel):
 
 
 class TokenPayload(BaseModel):
-    sub: Optional[str] = None
+    sub: Optional[uuid.UUID] = None

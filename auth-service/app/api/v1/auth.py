@@ -35,7 +35,7 @@ async def register_user(
     
     # ユーザー作成
     user = User(
-        id=str(uuid.uuid4()),
+        id=uuid.uuid4(),
         username=user_in.username,
         hashed_password=security.get_password_hash(user_in.password),
         is_active=True,

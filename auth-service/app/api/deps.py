@@ -1,4 +1,5 @@
 from typing import AsyncGenerator
+import uuid
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -33,7 +34,8 @@ async def get_current_user(
         )
     
     # 非同期クエリの実行
-    result = await db.execute(select(User).filter(User.id == token_data.sub))
+    user_id = token_data.sub
+    result = await db.execute(select(User).filter(User.id == user_id))
     user = result.scalars().first()
     
     if not user:
