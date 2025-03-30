@@ -4,7 +4,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from app.api.deps import get_current_user
 from app.core import security
@@ -17,14 +18,15 @@ router = APIRouter()
 
 
 @router.post("/register", response_model=UserSchema)
-def register_user(
-    user_in: UserCreate, db: Session = Depends(get_db)
+async def register_user(
+    user_in: UserCreate, db: AsyncSession = Depends(get_db)
 ) -> Any:
     """
     ユーザー登録
     """
     # メールアドレスの重複チェック
-    user = db.query(User).filter(User.email == user_in.email).first()
+    result = await db.execute(select(User).filter(User.email == user_in.email))
+    user = result.scalars().first()
     if user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -39,19 +41,20 @@ def register_user(
         is_active=True,
     )
     db.add(user)
-    db.commit()
-    db.refresh(user)
+    await db.commit()
+    await db.refresh(user)
     return user
 
 
 @router.post("/login", response_model=Token)
-def login_access_token(
-    db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()
+async def login_access_token(
+    db: AsyncSession = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
     """
     OAuth2互換のトークンログインを取得
     """
-    user = db.query(User).filter(User.email == form_data.username).first()
+    result = await db.execute(select(User).filter(User.email == form_data.username))
+    user = result.scalars().first()
     if not user or not security.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -74,7 +77,7 @@ def login_access_token(
 
 
 @router.get("/me", response_model=UserSchema)
-def read_users_me(current_user: User = Depends(get_current_user)) -> Any:
+async def read_users_me(current_user: User = Depends(get_current_user)) -> Any:
     """
     現在のユーザー情報を取得
     """

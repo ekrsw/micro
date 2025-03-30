@@ -1,10 +1,11 @@
-from typing import Generator
+from typing import AsyncGenerator
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from pydantic import ValidationError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from app.core import security
 from app.core.config import settings
@@ -17,8 +18,8 @@ reusable_oauth2 = OAuth2PasswordBearer(
 )
 
 
-def get_current_user(
-    db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)
+async def get_current_user(
+    db: AsyncSession = Depends(get_db), token: str = Depends(reusable_oauth2)
 ) -> User:
     try:
         payload = jwt.decode(
@@ -30,7 +31,11 @@ def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="認証情報が無効です",
         )
-    user = db.query(User).filter(User.id == token_data.sub).first()
+    
+    # 非同期クエリの実行
+    result = await db.execute(select(User).filter(User.id == token_data.sub))
+    user = result.scalars().first()
+    
     if not user:
         raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
     if not user.is_active:

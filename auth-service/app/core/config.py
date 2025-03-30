@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "password")
     POSTGRES_DB: str = os.getenv("POSTGRES_DB", "auth_db")
     DATABASE_URL: Optional[PostgresDsn] = os.getenv("DATABASE_URL")
+    ASYNC_DATABASE_URL: Optional[str] = None
 
     @field_validator("DATABASE_URL", mode="before")
     def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
@@ -29,6 +30,16 @@ class Settings(BaseSettings):
             host=values.data.get("POSTGRES_SERVER"),
             path=f"{values.data.get('POSTGRES_DB') or ''}",
         )
+
+    @field_validator("ASYNC_DATABASE_URL", mode="before")
+    def assemble_async_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
+        if isinstance(v, str):
+            return v
+        db_url = values.data.get("DATABASE_URL")
+        if db_url:
+            # PostgreSQLの接続URLを非同期用に変更
+            return str(db_url).replace("postgresql://", "postgresql+asyncpg://")
+        return None
 
     class Config:
         case_sensitive = True
