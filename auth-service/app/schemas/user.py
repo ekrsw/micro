@@ -1,20 +1,20 @@
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 
 class UserBase(BaseModel):
-    email: Optional[EmailStr] = None
+    username: Optional[str] = None
 
 
 class UserCreate(UserBase):
-    email: EmailStr
+    username: str
     password: str
 
 
 class UserInDBBase(UserBase):
     id: str
-    email: EmailStr
+    username: str
     is_active: bool = True
     is_admin: bool = False
 

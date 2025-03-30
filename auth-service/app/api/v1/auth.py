@@ -24,19 +24,19 @@ async def register_user(
     """
     ユーザー登録
     """
-    # メールアドレスの重複チェック
-    result = await db.execute(select(User).filter(User.email == user_in.email))
+    # ユーザー名の重複チェック
+    result = await db.execute(select(User).filter(User.username == user_in.username))
     user = result.scalars().first()
     if user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="このメールアドレスは既に登録されています",
+            detail="このユーザー名は既に登録されています",
         )
     
     # ユーザー作成
     user = User(
         id=str(uuid.uuid4()),
-        email=user_in.email,
+        username=user_in.username,
         hashed_password=security.get_password_hash(user_in.password),
         is_active=True,
     )
@@ -53,12 +53,12 @@ async def login_access_token(
     """
     OAuth2互換のトークンログインを取得
     """
-    result = await db.execute(select(User).filter(User.email == form_data.username))
+    result = await db.execute(select(User).filter(User.username == form_data.username))
     user = result.scalars().first()
     if not user or not security.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="メールアドレスまたはパスワードが正しくありません",
+            detail="ユーザー名またはパスワードが正しくありません",
         )
     if not user.is_active:
         raise HTTPException(

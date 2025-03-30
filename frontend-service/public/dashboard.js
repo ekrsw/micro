@@ -23,8 +23,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // ユーザー情報を表示
-    document.getElementById('user-email').textContent = user.email;
-    document.getElementById('user-email-detail').textContent = user.email;
+    document.getElementById('user-username').textContent = user.username;
+    document.getElementById('user-username-detail').textContent = user.username;
     document.getElementById('user-id').textContent = user.id;
     document.getElementById('user-status').textContent = user.is_active ? '有効' : '無効';
     document.getElementById('user-admin').textContent = user.is_admin ? '管理者' : '一般ユーザー';

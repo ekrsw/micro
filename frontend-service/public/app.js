@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        const email = document.getElementById('email').value;
+        const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
         
         // エラーメッセージをクリア
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             // FormDataオブジェクトを作成（OAuth2の仕様に合わせる）
             const formData = new URLSearchParams();
-            formData.append('username', email);  // OAuth2では'username'を使用
+            formData.append('username', username);  // OAuth2では'username'を使用
             formData.append('password', password);
             
             // ログインAPIを呼び出す

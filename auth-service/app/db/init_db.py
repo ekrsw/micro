@@ -21,7 +21,7 @@ async def create_initial_admin(db: AsyncSession) -> None:
     """
     try:
         # 管理者ユーザーが存在するか確認
-        result = await db.execute(select(User).filter(User.email == "admin@example.com"))
+        result = await db.execute(select(User).filter(User.username == "admin"))
         admin = result.scalars().first()
         if admin:
             logger.info("管理者ユーザーは既に存在します")
@@ -30,7 +30,7 @@ async def create_initial_admin(db: AsyncSession) -> None:
         # 管理者ユーザーの作成
         admin_user = User(
             id=str(uuid.uuid4()),
-            email="admin@example.com",
+            username="admin",
             hashed_password=get_password_hash("adminpassword"),
             is_active=True,
             is_admin=True,
@@ -38,7 +38,7 @@ async def create_initial_admin(db: AsyncSession) -> None:
         db.add(admin_user)
         await db.commit()
         await db.refresh(admin_user)
-        logger.info(f"管理者ユーザーを作成しました: {admin_user.email}")
+        logger.info(f"管理者ユーザーを作成しました: {admin_user.username}")
     except Exception as e:
         await db.rollback()
         logger.error(f"管理者ユーザー作成中にエラーが発生しました: {e}")
