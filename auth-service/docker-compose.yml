@@ -1,0 +1,32 @@
+services:
+  auth:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/auth_db
+      - SECRET_KEY=your_secret_key
+    depends_on:
+      - db
+    volumes:
+      - ./app:/app/app
+    networks:
+      - auth_network
+
+  db:
+    image: postgres:17.4-alpine
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=auth_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - auth_network
+
+volumes:
+  postgres_data:
+
+networks:
+  auth_network:
+    driver: bridge

@@ -1,38 +1,39 @@
 from typing import Optional
-from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field
+
+from pydantic import BaseModel, EmailStr
+
 
 class UserBase(BaseModel):
-    email: EmailStr
-    username: str
-    is_active: Optional[bool] = True
+    email: Optional[EmailStr] = None
+
 
 class UserCreate(UserBase):
-    password: str = Field(..., min_length=8)
+    email: EmailStr
+    password: str
 
-class UserUpdate(BaseModel):
-    email: Optional[EmailStr] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
-    is_active: Optional[bool] = None
 
 class UserInDBBase(UserBase):
-    id: int
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    id: str
+    email: EmailStr
+    is_active: bool = True
+    is_admin: bool = False
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
 
 class User(UserInDBBase):
     pass
 
+
 class UserInDB(UserInDBBase):
     hashed_password: str
+
 
 class Token(BaseModel):
     access_token: str
     token_type: str
+
 
 class TokenPayload(BaseModel):
     sub: Optional[str] = None

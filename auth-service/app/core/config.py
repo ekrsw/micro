@@ -1,29 +1,38 @@
 import os
-from pydantic import BaseSettings
-from dotenv import load_dotenv
+from typing import Any, Dict, Optional
 
-load_dotenv()
+from pydantic import PostgresDsn, field_validator
+from pydantic_settings import BaseSettings
+
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Auth Service"
     API_V1_STR: str = "/api/v1"
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "your_secret_key_here")
+    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
     
-    # Database
-    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
-    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "postgres")
-    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "microservices")
-    POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "localhost")
-    POSTGRES_PORT: str = os.getenv("POSTGRES_PORT", "5432")
-    
-    DATABASE_URL: str = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
-    
-    # JWT
-    SECRET_KEY: str = os.getenv("AUTH_SECRET_KEY", "supersecretkey")
-    ALGORITHM: str = os.getenv("AUTH_ALGORITHM", "HS256")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("AUTH_ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
-    
-    # Service
-    HOST: str = os.getenv("AUTH_SERVICE_HOST", "localhost")
-    PORT: int = int(os.getenv("AUTH_SERVICE_PORT", "8000"))
+    # PostgreSQL設定
+    POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", "db")
+    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "user")
+    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "password")
+    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "auth_db")
+    DATABASE_URL: Optional[PostgresDsn] = os.getenv("DATABASE_URL")
+
+    @field_validator("DATABASE_URL", mode="before")
+    def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
+        if isinstance(v, str):
+            return v
+        return PostgresDsn.build(
+            scheme="postgresql",
+            username=values.data.get("POSTGRES_USER"),
+            password=values.data.get("POSTGRES_PASSWORD"),
+            host=values.data.get("POSTGRES_SERVER"),
+            path=f"{values.data.get('POSTGRES_DB') or ''}",
+        )
+
+    class Config:
+        case_sensitive = True
+        env_file = ".env"
+
 
 settings = Settings()
