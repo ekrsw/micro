@@ -1,6 +1,6 @@
 from typing import List, Union
 
-from pydantic import AnyHttpUrl, field_validator
+from pydantic import AnyHttpUrl, Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "API Gateway"
     VERSION: str = "0.1.0"
+
+    # API設定
+    API_HOST: str = Field(default="localhost", json_schema_extra={"env": "API_HOST"})
+    API_PORT: int = Field(default=8080, json_schema_extra={"env": "API_PORT"})
     
     # CORS
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
