@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     REDIS_URL: Optional[str] = None
     
     # トークン設定
-    ACCESS_TOKEN_REDIS_EXPIRE_SECONDS: int = Field(default=1800, json_schema_extra={"env": "ACCESS_TOKEN_EXPIRE_MINUTES"})  # 30分をデフォルトとする
+    ACCESS_TOKEN_REDIS_EXPIRE_SECONDS: int = Field(default=1800, json_schema_extra={"env": "ACCESS_TOKEN_REDIS_EXPIRE_SECONDS"})  # 30分をデフォルトとする
 
     # Admin設定
     ADMIN_USERNAME: str = Field(default="admin", json_schema_extra={"env": "ADMIN_USERNAME"})
@@ -86,11 +86,15 @@ class Settings(BaseSettings):
     
     @field_validator("ACCESS_TOKEN_REDIS_EXPIRE_SECONDS", mode="before")
     def convert_minutes_to_seconds(cls, v: Optional[int], info: Dict[str, Any]) -> Any:
-        if v is None:
+        if v is not None:
+            return v
+        
+        # 環境変数から取得
+        seconds = info.data.get("ACCESS_TOKEN_REDIS_EXPIRE_SECONDS")
+        if seconds is None:
             return 1800  # デフォルト30分
         
-        # 分を秒に変換
-        return v * 60
+        return seconds
 
     model_config = ConfigDict(
         case_sensitive=True,

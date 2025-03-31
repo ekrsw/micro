@@ -6,6 +6,7 @@ services:
     depends_on:
       - auth
       - frontend
+      - redis
     networks:
       - microservice_network
 
@@ -22,8 +23,13 @@ services:
       - ./auth-service/.env
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@auth-db:5432/postgres
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
     depends_on:
       auth-db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: on-failure
     volumes:
