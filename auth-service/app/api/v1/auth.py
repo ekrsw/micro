@@ -1,8 +1,8 @@
 import uuid
-from datetime import timedelta
+from datetime import timedelta, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -12,7 +12,7 @@ from app.core import security
 from app.core.config import settings
 from app.db.db import get_db
 from app.models.user import User
-from app.schemas.user import Token, User as UserSchema, UserCreate
+from app.schemas.user import Token, User as UserSchema, UserCreate, RefreshToken
 
 router = APIRouter()
 
@@ -68,13 +68,64 @@ async def login_access_token(
     
     # アクセストークンの作成
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = security.create_access_token(
+        user.id,
+        expires_delta=access_token_expires
+    )
+    
+    # リフレッシュトークンの作成
+    refresh_token = security.generate_refresh_token()
+    refresh_token_expires = security.create_refresh_token_expires()
+    
+    # ユーザーにリフレッシュトークンを保存
+    user.refresh_token = refresh_token
+    user.refresh_token_expires_at = refresh_token_expires
+    await db.commit()
+    
     return {
-        "access_token": security.create_access_token(
-            user.id,
-            expires_delta=access_token_expires
-            ),
+        "access_token": access_token,
         "token_type": "bearer",
-        }
+        "refresh_token": refresh_token,
+    }
+
+
+@router.post("/refresh", response_model=Token)
+async def refresh_access_token(
+    refresh_token_in: RefreshToken = Body(...),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """
+    リフレッシュトークンを使用して新しいアクセストークンを取得
+    """
+    # リフレッシュトークンでユーザーを検索
+    result = await db.execute(select(User).filter(User.refresh_token == refresh_token_in.refresh_token))
+    user = result.scalars().first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="無効なリフレッシュトークンです",
+        )
+    
+    # リフレッシュトークンの有効期限をチェック
+    if not user.refresh_token_expires_at or user.refresh_token_expires_at < datetime.utcnow():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="リフレッシュトークンの有効期限が切れています",
+        )
+    
+    # 新しいアクセストークンを生成
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = security.create_access_token(
+        user.id,
+        expires_delta=access_token_expires
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "refresh_token": user.refresh_token,
+    }
 
 
 @router.get("/me", response_model=UserSchema)

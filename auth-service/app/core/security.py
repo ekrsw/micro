@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
-from typing import Any, Union
+from typing import Any, Union, Tuple
+import secrets
+import string
 
 from jose import jwt
 from passlib.context import CryptContext
@@ -26,6 +28,21 @@ def create_access_token(
     to_encode = {"exp": expire, "sub": sub}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
+
+
+def generate_refresh_token(length: int = 64) -> str:
+    """
+    ランダムなリフレッシュトークンを生成する
+    """
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+
+def create_refresh_token_expires() -> datetime:
+    """
+    リフレッシュトークンの有効期限を計算する
+    """
+    return datetime.utcnow() + timedelta(hours=settings.REFRESH_TOKEN_EXPIRE_HOURS)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

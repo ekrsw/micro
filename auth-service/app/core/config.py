@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(default="your_secret_key_here", json_schema_extra={"env": "SECRET_KEY"})
     ALGORITHM: str = Field(default="HS256", json_schema_extra={"env": "ALGORITHM"})
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30, json_schema_extra={"env": "ACCESS_TOKEN_EXPIRE_MINUTES"})
+    REFRESH_TOKEN_EXPIRE_HOURS: int = Field(default=24, json_schema_extra={"env": "REFRESH_TOKEN_EXPIRE_HOURS"})
     
     # PostgreSQL設定
     POSTGRES_SERVER: str = Field(default="db", json_schema_extra={"env": "POSTGRES_SERVER"})

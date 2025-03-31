@@ -34,7 +34,13 @@ class UserInDB(UserInDBBase):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    refresh_token: Optional[str] = None
 
 
 class TokenPayload(BaseModel):
     sub: Optional[uuid.UUID] = None
+    exp: Optional[int] = None
+
+
+class RefreshToken(BaseModel):
+    refresh_token: str
