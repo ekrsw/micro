@@ -102,3 +102,7 @@ async def startup_event():
                 logger.error(f"アプリケーション起動中にエラーが発生しました: {e}")
                 # エラーをログに記録するだけで、アプリケーションは起動を続行
                 # これにより、データベースが利用できない場合でもAPIの一部は機能する
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

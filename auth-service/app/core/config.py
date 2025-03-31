@@ -12,11 +12,12 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_HOURS: int = Field(default=24, json_schema_extra={"env": "REFRESH_TOKEN_EXPIRE_HOURS"})
     
     # PostgreSQL設定
-    POSTGRES_SERVER: str = Field(default="db", json_schema_extra={"env": "POSTGRES_SERVER"})
+    POSTGRES_HOST: str = Field(default="localhost", json_schema_extra={"env": "POSTGRES_HOST"})
+    POSTGRES_PORT: int = Field(default=5432, json_schema_extra={"env": "POSTGRES_PORT"})
     POSTGRES_USER: str = Field(default="user", json_schema_extra={"env": "POSTGRES_USER"})
     POSTGRES_PASSWORD: str = Field(default="password", json_schema_extra={"env": "POSTGRES_PASSWORD"})
     POSTGRES_DB: str = Field(default="auth_db", json_schema_extra={"env": "POSTGRES_DB"})
-    DATABASE_URL: Optional[PostgresDsn] = Field(default=None, json_schema_extra={"env": "DATABASE_URL"})
+    DATABASE_URL: Optional[str] = None
     ASYNC_DATABASE_URL: Optional[str] = None
 
     # Admin設定
@@ -24,26 +25,36 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str = Field(default="password", json_schema_extra={"env": "ADMIN_PASSWORD"})
 
     @field_validator("DATABASE_URL", mode="before")
-    def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
+    def assemble_db_connection(cls, v: Optional[str], info: Dict[str, Any]) -> Any:
         if isinstance(v, str):
             return v
-        return PostgresDsn.build(
-            scheme="postgresql",
-            username=values.data.get("POSTGRES_USER"),
-            password=values.data.get("POSTGRES_PASSWORD"),
-            host=values.data.get("POSTGRES_SERVER"),
-            path=f"{values.data.get('POSTGRES_DB') or ''}",
-        )
+        
+        user = info.data.get("POSTGRES_USER")
+        password = info.data.get("POSTGRES_PASSWORD")
+        host = info.data.get("POSTGRES_HOST")
+        port = info.data.get("POSTGRES_PORT")
+        db = info.data.get("POSTGRES_DB")
+        
+        if not all([user, password, host, db]):
+            return None
+            
+        return f"postgresql://{user}:{password}@{host}:{port}/{db}"
 
     @field_validator("ASYNC_DATABASE_URL", mode="before")
-    def assemble_async_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
+    def assemble_async_db_connection(cls, v: Optional[str], info: Dict[str, Any]) -> Any:
         if isinstance(v, str):
             return v
-        db_url = values.data.get("DATABASE_URL")
-        if db_url:
-            # PostgreSQLの接続URLを非同期用に変更
-            return str(db_url).replace("postgresql://", "postgresql+asyncpg://")
-        return None
+            
+        user = info.data.get("POSTGRES_USER")
+        password = info.data.get("POSTGRES_PASSWORD")
+        host = info.data.get("POSTGRES_HOST")
+        port = info.data.get("POSTGRES_PORT")
+        db = info.data.get("POSTGRES_DB")
+        
+        if not all([user, password, host, db]):
+            return None
+            
+        return f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{db}"
 
     model_config = ConfigDict(
         case_sensitive=True,

@@ -21,7 +21,7 @@ services:
     env_file:
       - ./auth-service/.env
     environment:
-      - DATABASE_URL=postgresql://user:password@auth-db:5432/auth_db
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@auth-db:5432/postgres
     depends_on:
       auth-db:
         condition: service_healthy
@@ -33,16 +33,20 @@ services:
 
   auth-db:
     image: postgres:17.4-alpine
+    env_file:
+      - ./auth-service/.env
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=auth_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - microservice_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d auth_db"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
