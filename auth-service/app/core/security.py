@@ -10,8 +10,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def create_access_token(
-    subject: Union[str, Any], expires_delta: timedelta = None
-) -> str:
+        subject: Union[str, Any], expires_delta: timedelta = None
+        ) -> str:
     """
     JWTアクセストークンを生成する
     """
