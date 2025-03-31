@@ -98,7 +98,8 @@ class Settings(BaseSettings):
 
     model_config = ConfigDict(
         case_sensitive=True,
-        env_file=".env"
+        env_file=".env",
+        extra="allow"  # 未定義の環境変数を許可
     )
 
 
