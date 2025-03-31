@@ -42,6 +42,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // トークンをローカルストレージに保存
             localStorage.setItem('token', data.access_token);
+            // リフレッシュトークンも保存
+            if (data.refresh_token) {
+                localStorage.setItem('refresh_token', data.refresh_token);
+            }
             
             // ユーザー情報を取得
             const userResponse = await fetch('/api/v1/auth/me', {

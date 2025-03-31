@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ログアウトボタンの処理
     document.getElementById('logout-btn').addEventListener('click', function() {
         localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
         window.location.href = 'index.html';
     });
@@ -59,13 +60,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // 定期的にトークンの有効性を確認
     async function validateToken() {
         try {
+            // 最新のトークンを取得
+            const currentToken = localStorage.getItem('token');
+            if (!currentToken) {
+                throw new Error('トークンが見つかりません');
+            }
+            
             const response = await fetch('/api/v1/auth/me', {
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${currentToken}`
                 }
             });
             
             if (!response.ok) {
+                // トークンが無効な場合、リフレッシュトークンを使用して新しいトークンを取得
+                const refreshToken = localStorage.getItem('refresh_token');
+                if (refreshToken) {
+                    await refreshAccessToken(refreshToken);
+                    return; // リフレッシュ成功
+                }
                 throw new Error('トークンが無効です');
             }
             
@@ -73,8 +86,42 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('トークン検証エラー:', error);
             alert('セッションが切れました。再度ログインしてください。');
             localStorage.removeItem('token');
+            localStorage.removeItem('refresh_token');
             localStorage.removeItem('user');
             window.location.href = 'index.html';
+        }
+    }
+    
+    // リフレッシュトークンを使用して新しいアクセストークンを取得
+    async function refreshAccessToken(refreshToken) {
+        try {
+            const response = await fetch('/api/v1/auth/refresh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    refresh_token: refreshToken
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('リフレッシュトークンが無効です');
+            }
+            
+            const data = await response.json();
+            
+            // 新しいトークンを保存
+            localStorage.setItem('token', data.access_token);
+            if (data.refresh_token) {
+                localStorage.setItem('refresh_token', data.refresh_token);
+            }
+            
+            console.log('アクセストークンを更新しました');
+            
+        } catch (error) {
+            console.error('トークン更新エラー:', error);
+            throw error; // 呼び出し元でエラーハンドリングするために再スロー
         }
     }
     
