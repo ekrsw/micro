@@ -26,6 +26,18 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - auth_network
+      
+  redis:
+    image: redis:7.4.2-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - auth_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

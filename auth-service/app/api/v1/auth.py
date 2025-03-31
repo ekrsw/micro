@@ -6,11 +6,15 @@ from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from redis.asyncio.client import Redis
+from jose import jwt
+from pydantic import ValidationError
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, reusable_oauth2
 from app.core import security
 from app.core.config import settings
 from app.db.db import get_db
+from app.db.redis import get_redis, set_access_token, delete_access_token, add_to_blacklist
 from app.models.user import User
 from app.schemas.user import Token, User as UserSchema, UserCreate, RefreshToken
 
@@ -48,7 +52,9 @@ async def register_user(
 
 @router.post("/login", response_model=Token)
 async def login_access_token(
-    db: AsyncSession = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()
+    db: AsyncSession = Depends(get_db), 
+    redis: Redis = Depends(get_redis),
+    form_data: OAuth2PasswordRequestForm = Depends()
     ) -> Any:
     """
     OAuth2互換のトークンログインを取得
@@ -73,11 +79,18 @@ async def login_access_token(
         expires_delta=access_token_expires
     )
     
+    # アクセストークンをRedisに保存
+    await set_access_token(
+        str(user.id), 
+        access_token, 
+        settings.ACCESS_TOKEN_REDIS_EXPIRE_SECONDS
+    )
+    
     # リフレッシュトークンの作成
     refresh_token = security.generate_refresh_token()
     refresh_token_expires = security.create_refresh_token_expires()
     
-    # ユーザーにリフレッシュトークンを保存
+    # リフレッシュトークンをPostgreSQLに保存
     user.refresh_token = refresh_token
     user.refresh_token_expires_at = refresh_token_expires
     await db.commit()
@@ -92,12 +105,13 @@ async def login_access_token(
 @router.post("/refresh", response_model=Token)
 async def refresh_access_token(
     refresh_token_in: RefreshToken = Body(...),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis)
 ) -> Any:
     """
     リフレッシュトークンを使用して新しいアクセストークンを取得
     """
-    # リフレッシュトークンでユーザーを検索
+    # リフレッシュトークンでユーザーを検索（PostgreSQLから）
     result = await db.execute(select(User).filter(User.refresh_token == refresh_token_in.refresh_token))
     user = result.scalars().first()
     
@@ -121,11 +135,55 @@ async def refresh_access_token(
         expires_delta=access_token_expires
     )
     
+    # 新しいアクセストークンをRedisに保存
+    await set_access_token(
+        str(user.id), 
+        access_token, 
+        settings.ACCESS_TOKEN_REDIS_EXPIRE_SECONDS
+    )
+    
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "refresh_token": user.refresh_token,
     }
+
+
+@router.post("/logout")
+async def logout(
+    current_user: User = Depends(get_current_user),
+    token: str = Depends(reusable_oauth2),
+    db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis)
+) -> Any:
+    """
+    ユーザーをログアウトし、トークンを無効化する
+    """
+    # アクセストークンをRedisから削除
+    await delete_access_token(token)
+    
+    # トークンをブラックリストに追加
+    # JWTの有効期限まで保持する
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+            )
+        exp = payload.get("exp")
+        if exp:
+            # 現在時刻からの残り秒数を計算
+            current_timestamp = datetime.utcnow().timestamp()
+            remaining_seconds = max(1, int(exp - current_timestamp))
+            await add_to_blacklist(token, remaining_seconds)
+    except (jwt.JWTError, ValidationError):
+        # トークンが無効な場合でも、念のためブラックリストに追加（1時間）
+        await add_to_blacklist(token, 3600)
+    
+    # リフレッシュトークンを無効化
+    current_user.refresh_token = None
+    current_user.refresh_token_expires_at = None
+    await db.commit()
+    
+    return {"message": "ログアウトしました"}
 
 
 @router.get("/me", response_model=UserSchema)
