@@ -16,8 +16,13 @@ from app.db.redis import (
 
 
 @pytest.mark.asyncio
-async def test_access_token_operations(redis_server):
+async def test_access_token_operations(redis_server, monkeypatch):
     """アクセストークンの操作テスト"""
+    # get_redis()をモックして、テスト用Redisサーバーを返すようにする
+    async def mock_get_redis():
+        return redis_server
+    monkeypatch.setattr("app.db.redis.get_redis", mock_get_redis)
+
     # テストデータ
     user_id = str(uuid.uuid4())
     token = "test_token"
@@ -54,12 +59,17 @@ async def test_access_token_operations(redis_server):
 
 
 @pytest.mark.asyncio
-async def test_token_expiry(redis_server):
+async def test_token_expiry(redis_server, monkeypatch):
     """トークンの有効期限テスト"""
+    # get_redis()をモックして、テスト用Redisサーバーを返すようにする
+    async def mock_get_redis():
+        return redis_server
+    monkeypatch.setattr("app.db.redis.get_redis", mock_get_redis)
+
     # テストデータ
     user_id = str(uuid.uuid4())
     token = "expiry_test_token"
-    expires = 1  # 1秒
+    expires = 2  # 2秒
     
     # トークンの保存
     await set_access_token(user_id, token, expires)
@@ -69,7 +79,7 @@ async def test_token_expiry(redis_server):
     assert token_info is not None
     
     # 有効期限が切れるまで待機
-    await asyncio.sleep(1.5)
+    await asyncio.sleep(2.5)
     
     # 有効期限後の検証
     token_info = await get_access_token(token)
@@ -77,8 +87,13 @@ async def test_token_expiry(redis_server):
 
 
 @pytest.mark.asyncio
-async def test_blacklist_operations(redis_server):
+async def test_blacklist_operations(redis_server, monkeypatch):
     """ブラックリスト操作のテスト"""
+    # get_redis()をモックして、テスト用Redisサーバーを返すようにする
+    async def mock_get_redis():
+        return redis_server
+    monkeypatch.setattr("app.db.redis.get_redis", mock_get_redis)
+
     # テストデータ
     token = "blacklist_test_token"
     expires = 10  # 10秒
@@ -96,8 +111,8 @@ async def test_blacklist_operations(redis_server):
     
     # Redisに直接アクセスして検証
     key = f"blacklist:{token}"
-    exists = await redis_server.exists(key)
-    assert exists == 1
+    value = await redis_server.get(key)
+    assert value == "1"
     
     # TTLの検証
     ttl = await redis_server.ttl(key)
@@ -105,11 +120,16 @@ async def test_blacklist_operations(redis_server):
 
 
 @pytest.mark.asyncio
-async def test_blacklist_expiry(redis_server):
+async def test_blacklist_expiry(redis_server, monkeypatch):
     """ブラックリストの有効期限テスト"""
+    # get_redis()をモックして、テスト用Redisサーバーを返すようにする
+    async def mock_get_redis():
+        return redis_server
+    monkeypatch.setattr("app.db.redis.get_redis", mock_get_redis)
+
     # テストデータ
     token = "blacklist_expiry_test_token"
-    expires = 1  # 1秒
+    expires = 2  # 2秒
     
     # ブラックリストに追加
     await add_to_blacklist(token, expires)
@@ -119,7 +139,7 @@ async def test_blacklist_expiry(redis_server):
     assert is_in_blacklist is True
     
     # 有効期限が切れるまで待機
-    await asyncio.sleep(1.5)
+    await asyncio.sleep(2.5)
     
     # 有効期限後の検証
     is_in_blacklist = await is_blacklisted(token)
