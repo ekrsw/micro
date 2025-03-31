@@ -20,18 +20,18 @@ reusable_oauth2 = OAuth2PasswordBearer(
 
 
 async def get_current_user(
-    db: AsyncSession = Depends(get_db), token: str = Depends(reusable_oauth2)
-) -> User:
+        db: AsyncSession = Depends(get_db), token: str = Depends(reusable_oauth2)
+        ) -> User:
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
+            )
         token_data = TokenPayload(**payload)
     except (jwt.JWTError, ValidationError):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="認証情報が無効です",
-        )
+            )
     
     # 非同期クエリの実行
     user_id = token_data.sub
