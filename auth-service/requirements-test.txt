@@ -1,6 +1,0 @@
-pytest==7.4.0
-pytest-asyncio==0.21.1
-httpx==0.24.1
-async-asgi-testclient==1.4.11
-fakeredis[aioredis]==2.20.0
-pytest-env==0.8.2
