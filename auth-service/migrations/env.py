@@ -9,7 +9,7 @@ from alembic import context
 
 # モデルのインポート
 from app.db.base import Base
-from app.models.user import AuthUser  # 他のモデルも必要に応じてインポート
+from app.models.auth_user import AuthUser  # 他のモデルも必要に応じてインポート
 from app.core.config import settings
 
 # alembic.iniからの設定
