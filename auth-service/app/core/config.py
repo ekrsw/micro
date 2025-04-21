@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     RABBITMQ_VHOST: str = "/"
     USER_SYNC_EXCHANGE: str = "user_events"
     USER_SYNC_ROUTING_KEY: str = "user.sync"
+
     # データベース設定
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
@@ -44,6 +45,10 @@ class Settings(BaseSettings):
     
     # トークンブラックリスト関連の設定
     TOKEN_BLACKLIST_ENABLED: bool = True
+
+    # ユーザーサービスのURL
+    USER_SERVICE_INTERNAL_PORT: int = 8082
+    USER_SERVICE_URL: str = f"http://user-service:{USER_SERVICE_INTERNAL_PORT}/api/v1/users"
     
     @property
     def DATABASE_URL(self) -> str:
