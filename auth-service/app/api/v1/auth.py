@@ -99,3 +99,69 @@ async def register_user(
     
     logger.info(f"ユーザー登録成功: ID={new_user.id}, ユーザー名={new_user.username}, 管理者={new_user.is_admin}")
     return new_user
+
+@router.post("/login", response_model=Token)
+async def login(
+    request: Request,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: AsyncSession = Depends(get_db)
+    ) -> Any:
+    """
+    ユーザーログインとトークン発行のエンドポイント
+    """
+    logger = get_request_logger(request)
+    logger.info(f"ログインリクエスト: ユーザー名={form_data.username}")
+    
+    # ユーザー認証
+    db_user = await crud_auth_user.get_by_username(db, username=form_data.username)
+    if not db_user:
+        logger.warning(f"ログイン失敗: ユーザー名 '{form_data.username}' が存在しません")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="ユーザー名またはパスワードが正しくありません",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # パスワード検証
+    if not verify_password(form_data.password, db_user.hashed_password):
+        logger.warning(f"ログイン失敗: ユーザー '{form_data.username}' のパスワードが不正です")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="ユーザー名またはパスワードが正しくありません",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # アクセストークン生成
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = await create_access_token(
+        data={"sub": str(db_user.id),
+              "user_id": str(db_user.user_id),
+              "username": db_user.username},
+        expires_delta=access_token_expires
+    )
+    
+    # リフレッシュトークン生成
+    refresh_token = await create_refresh_token(user_id=str(db_user.id))
+    
+    logger.info(f"ログイン成功: ユーザーID={db_user.id}, ユーザー名={db_user.username}")
+    
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
+    }
+
+@router.get("/users", response_model=List[UserResponse])
+async def get_all_users(
+    request: Request,
+    current_user: AuthUser = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db)
+    ) -> Any:
+    """
+    全ユーザーを取得するエンドポイント（管理者のみ）
+    """
+    logger = get_request_logger(request)
+    logger.info(f"全ユーザー取得リクエスト: 要求元={current_user.username}")
+    
+    users = await crud_auth_user.get_all_users(db)
+    return users
