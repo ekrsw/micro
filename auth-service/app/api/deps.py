@@ -8,7 +8,7 @@ from uuid import UUID
 from app.core.config import settings
 from app.core.security import verify_refresh_token, verify_token
 from app.models.auth_user import AuthUser
-from app.crud.auth_user import user as user_crud
+from app.crud.auth_user import crud_auth_user
 from app.db.session import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -51,7 +51,7 @@ async def get_current_user(
         raise credentials_exception
         
     # ユーザーをデータベースから取得
-    user = await user_crud.get_by_id(db, id=UUID(user_id))
+    user = await crud_auth_user.get_by_id(db, id=UUID(user_id))
     
     if user is None:
         raise credentials_exception
