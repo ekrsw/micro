@@ -64,7 +64,7 @@ async def register_user(
     logger.info(f"一般ユーザー登録リクエスト: {user_in.username}")
     
     # ユーザー名の重複チェック
-    existing_user = await user.get_by_username(db, username=user_in.username)
+    existing_user = await crud_auth_user.get_by_username(db, username=user_in.username)
     if existing_user:
         logger.warning(f"ユーザー登録失敗: ユーザー名 '{user_in.username}' は既に使用されています")
         raise HTTPException(
@@ -73,7 +73,7 @@ async def register_user(
         )
     
     # ユーザー作成
-    new_user = await user.create(db, user_in)
+    new_user = await crud_auth_user.create(db, user_in)
     if not new_user:
         logger.error(f"ユーザー登録失敗: '{user_in.username}' の作成中にエラーが発生しました")
         raise HTTPException(
