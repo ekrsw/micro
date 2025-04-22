@@ -2,6 +2,14 @@ services:
   auth-service:
     networks:
       - microservice_network
+  user-service:
+    networks:
+      - microservice_network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
 
 networks:
   microservice_network:

@@ -10,6 +10,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
+from app.clients.user_service import get_user_info_from_user_service
 from app.crud.auth_user import crud_auth_user
 from app.db.session import get_db
 from app.messaging.rabbitmq import (
@@ -132,10 +133,12 @@ async def login(
         )
     
     # アクセストークン生成
+    user_info = get_user_info_from_user_service(db_user.user_id)
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = await create_access_token(
         data={"sub": str(db_user.id),
               "user_id": str(db_user.user_id),
+              "is_admin": str(user_info.is_admin),
               "username": db_user.username},
         expires_delta=access_token_expires
     )

@@ -78,7 +78,7 @@ async def update_profile(
     request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
-) -> Any:
+    ) -> Any:
     """
     自分自身のプロファイル情報を更新するエンドポイント
     - is_adminフラグは変更不可
